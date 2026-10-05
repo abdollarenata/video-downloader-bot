@@ -127,6 +127,9 @@ def create_yt_dlp_options(is_audio=False, progress_callback=None):
     options['outtmpl'] = str(DOWNLOADS_DIR / '%(title)s.%(ext)s')
     options['socket_timeout'] = DOWNLOAD_TIMEOUT
     
+    # Добавляем куки для обхода блокировок социальных сетей
+    options['cookiefile'] = 'cookies.txt'
+    
     # Добавляем callback прогресса если нужен
     if progress_callback:
         options['progress_hooks'] = [progress_callback]
@@ -149,6 +152,7 @@ def get_video_info(url):
             'quiet': True,
             'no_warnings': True,
             'extract_flat': True,
+            'cookiefile': 'cookies.txt',  # Добавляем куки для проверки инфо
         }
         
         with yt_dlp.YoutubeDL(options) as ydl:
@@ -194,6 +198,7 @@ def get_playlist_info(url):
             'quiet': True,
             'no_warnings': True,
             'extract_flat': True,
+            'cookiefile': 'cookies.txt',  # Добавляем куки для проверки плейлиста
         }
         
         with yt_dlp.YoutubeDL(options) as ydl:
@@ -297,37 +302,3 @@ def download_video_threaded(url, task_id, is_audio=False, progress_callback=None
     )
     thread.start()
     return thread
-
-
-# ============= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =============
-
-def get_estimated_quality_and_size(url):
-    """
-    Получает предполагаемое качество и размер видео
-    
-    Args:
-        url: URL видео
-    
-    Returns:
-        dict: {'quality': str, 'size_mb': int, 'duration': int}
-    """
-    try:
-        info = get_video_info(url)
-        if not info:
-            return None
-        
-        # Получаем информацию
-        result = {
-            'title': info.get('title', 'Unknown'),
-            'duration': info.get('duration', 0),
-            'uploader': info.get('uploader', 'Unknown'),
-        }
-        
-        return result
-    
-    except Exception as e:
-        logger.error(f"Ошибка при получении информации о качестве: {e}")
-        return None
-
-
-logger.info("✅ Downloader инициализирован")
