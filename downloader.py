@@ -31,15 +31,6 @@ class DownloadQueue:
     def add_download(self, task_id, user_id, url, is_audio=False):
         """
         Добавляет задачу скачивания в очередь
-        
-        Args:
-            task_id: Уникальный ID задачи
-            user_id: ID пользователя
-            url: URL видео
-            is_audio: Только звук?
-        
-        Returns:
-            bool: True если добавлено, False если очередь переполнена
         """
         with self.lock:
             if len(self.active_downloads) >= self.max_concurrent:
@@ -62,9 +53,6 @@ class DownloadQueue:
     def remove_download(self, task_id):
         """
         Удаляет задачу из активных скачиваний
-        
-        Args:
-            task_id: ID задачи
         """
         with self.lock:
             if task_id in self.active_downloads:
@@ -78,12 +66,6 @@ class DownloadQueue:
     def get_download_info(self, task_id):
         """
         Получает информацию о скачивании
-        
-        Args:
-            task_id: ID задачи
-        
-        Returns:
-            dict: Информация о скачивании или None
         """
         with self.lock:
             return self.active_downloads.get(task_id)
@@ -91,10 +73,6 @@ class DownloadQueue:
     def update_progress(self, task_id, progress):
         """
         Обновляет прогресс скачивания
-        
-        Args:
-            task_id: ID задачи
-            progress: Прогресс (0-100)
         """
         with self.lock:
             if task_id in self.active_downloads:
@@ -110,13 +88,6 @@ download_queue = DownloadQueue()
 def create_yt_dlp_options(is_audio=False, progress_callback=None):
     """
     Создаёт опции для yt-dlp
-    
-    Args:
-        is_audio: Скачивать только звук?
-        progress_callback: Функция для обновления прогресса
-    
-    Returns:
-        dict: Опции для yt-dlp
     """
     if is_audio:
         options = YT_DLP_AUDIO_OPTIONS.copy()
@@ -140,12 +111,6 @@ def create_yt_dlp_options(is_audio=False, progress_callback=None):
 def get_video_info(url):
     """
     Получает информацию о видео без скачивания
-    
-    Args:
-        url: URL видео
-    
-    Returns:
-        dict: Информация о видео или None
     """
     try:
         options = {
@@ -167,12 +132,6 @@ def get_video_info(url):
 def is_playlist(url):
     """
     Проверяет, является ли URL плейлистом
-    
-    Args:
-        url: URL для проверки
-    
-    Returns:
-        bool: True если плейлист
     """
     try:
         info = get_video_info(url)
@@ -186,12 +145,6 @@ def is_playlist(url):
 def get_playlist_info(url):
     """
     Получает информацию о плейлисте
-    
-    Args:
-        url: URL плейлиста
-    
-    Returns:
-        dict: Информация о плейлисте
     """
     try:
         options = {
@@ -213,17 +166,7 @@ def get_playlist_info(url):
 def download_video(url, task_id=None, is_audio=False, progress_callback=None):
     """
     Скачивает видео или аудио с помощью yt-dlp
-    
-    Args:
-        url: URL видео
-        task_id: ID задачи для отслеживания
-        is_audio: Скачивать только звук?
-        progress_callback: Функция для обновления прогресса
-    
-    Returns:
-        dict: Информация о скачивании {'success': bool, 'file': str, 'title': str, 'error': str}
     """
-    
     result = {
         'success': False,
         'file': None,
@@ -282,18 +225,25 @@ def download_video(url, task_id=None, is_audio=False, progress_callback=None):
     return result
 
 
+def get_estimated_quality_and_size(url):
+    """
+    Возвращает примерный размер и качество видео для интерфейса main.py
+    """
+    info = get_video_info(url)
+    if not info:
+        return "Неизвестно", 0
+    
+    # Извлекаем форматы или берем дефолтные значения
+    quality = info.get('format_note', '720p')
+    filesize = info.get('filesize_approx', 0) or info.get('filesize', 0)
+    size_mb = round(filesize / (1024 * 1024), 1) if filesize else 0
+    
+    return quality, size_mb
+
+
 def download_video_threaded(url, task_id, is_audio=False, progress_callback=None):
     """
     Скачивает видео в отдельном потоке (неблокирующий вызов)
-    
-    Args:
-        url: URL видео
-        task_id: ID задачи
-        is_audio: Только звук?
-        progress_callback: Функция для обновления прогресса
-    
-    Returns:
-        threading.Thread: Поток скачивания
     """
     thread = threading.Thread(
         target=download_video,
